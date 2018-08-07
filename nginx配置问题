@@ -1,0 +1,39 @@
+server {
+        listen       8050;                            # nginx访问端口（自己设置）
+        server_name  localhost;                        # nginx访问域名（访问时输入localhost:8050）
+
+        location / {
+            proxy_pass   http://10.61.90.132:8080;        # 前端静态页面地址(自己的IP地址)
+            proxy_redirect default;
+            #设置主机头和客户端真实地址，以便服务器获取客户端真实IP
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;                
+        }
+
+        location /apis {                            # 自定义nginx接口前缀（apis自己定义的，在页面中this.$axios.get('/apis/Server_confrim',{param:{...}})）
+            rewrite  ^/apis/(.*)$ /$1 break;        # 监听所有/apis前缀，是则转发后台api接口地址
+            include  uwsgi_params;
+            proxy_pass   http://10.57.248.105:8080;        # 后台api接口地址（要访问的地址）
+            #设置主机头和客户端真实地址，以便服务器获取客户端真实IP
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;                
+        }
+        
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+    }
+
+1.先下载nginx，安装，配置 在cmd里安装 start nginx.exe 注意：在文件夹下去输入命令
+2.注意：在nginx\conf\nginx文件里修改上述代码；
+每次修改过后要重新加载一次 nginx -s reload
+3.原本页面是在http://localhost:8080,现在直接在新窗口打开http://localhost:8050;
+页面里的请求 原本为 	this.$axios.get('http://10.57.248.105:8080/Server_confirm',{param:{...}})
+变为			this.$axios.get('/apis/Server_confrim',{param:{...}}）
+
+
+网页参考：
+https://www.cnblogs.com/007sx/p/7151720.html
